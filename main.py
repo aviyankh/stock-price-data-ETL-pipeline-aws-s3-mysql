@@ -3,6 +3,7 @@ import yfinance as yf
 import os
 import pandas as pd 
 import numpy as np
+import matplotlib.pyplot as plt
 import boto3
 import csv
 import zipfile
@@ -82,44 +83,60 @@ def mysql_push(stock_data, stock_info):
     
     
     
-    # col_names = ""
-    # #Create mysql table
-    # for cols in stock_data.columns[:-1]:
-    #     col_names = col_names +"`"+cols+"`" + " float NULL,"
-    # create_stock_price_table = """CREATE TABLE IF NOT EXISTS `stock_price_data` (
-    #      `key_id` int NOT NULL AUTO_INCREMENT,
-    #      """ + col_names + """ `Date` datetime NOT NULL, PRIMARY KEY(key_id)) ENGINE=InnoDB DEFAULT CHARSET=latin1;"""
+    col_names = ""
+    #Create mysql table
+    for cols in stock_data.columns[:-1]:
+        col_names = col_names +"`"+cols+"`" + " float NULL,"
+    create_stock_price_table = """CREATE TABLE IF NOT EXISTS `stock_price_data` (
+         `key_id` int NOT NULL AUTO_INCREMENT,
+         """ + col_names + """ `Date` datetime NOT NULL, PRIMARY KEY(key_id)) ENGINE=InnoDB DEFAULT CHARSET=latin1;"""
     
-    # cursor.execute(create_stock_price_table)
-    # sql_connection.commit()
+    cursor.execute(create_stock_price_table)
+    sql_connection.commit()
 
-    # new_dataframe = stock_data.copy()
+    new_dataframe = stock_data.copy()
 
-    # creds = {
-    #     'usr': aws_cred[4][:-1],
-    #     'pwd': aws_cred[5][:-1],
-    #     'hst': aws_cred[3][:-1],
-    #     'prt': 3306, 
-    #     'dbn': aws_cred[6][:-1]
-    # }
+    creds = {
+        'usr': aws_cred[4][:-1],
+        'pwd': aws_cred[5][:-1],
+        'hst': aws_cred[3][:-1],
+        'prt': 3306, 
+        'dbn': aws_cred[6][:-1]
+    }
 
-    # al_connect = 'mysql+mysqlconnector://{usr}:{pwd}@{hst}:{prt}/{dbn}'
+    al_connect = 'mysql+mysqlconnector://{usr}:{pwd}@{hst}:{prt}/{dbn}'
 
-    # engine = create_engine(connstr.format(**creds))
-    # chunk = int(len(new_dataframe)/1000)
-    # try:
-    #     new_dataframe.to_sql(name = "stock_price_data", con= engine, if_exists="replace", chunksize=chunk, index=False)
-    # except:
-    #     print("Load to Dataframe Error")
-    # else:
-    #     print("Dataframe load Successfull")
+    engine = create_engine(connstr.format(**creds))
+    chunk = int(len(new_dataframe)/1000)
+    try:
+        new_dataframe.to_sql(name = "stock_price_data", con= engine, if_exists="replace", chunksize=chunk, index=False)
+    except:
+        print("Load to Dataframe Error")
+    else:
+        print("Dataframe load Successfull")
 
 
 #Create dataframe with given company codes
-stock_data, stock_info  = historical_price(["AAPL", "META", "TSLA", "GOOG", "NVDA"])
+companies = ["AAPL", "META", "TSLA", "GOOG", "NVDA"]
+stock_data, stock_info  = historical_price(companies)
 
 #Push the dataframe into AWS S3
 #push_to_s3(stock_data, stock_info,cwd)
 
 #Push data into mysql
-mysql_push(stock_data, stock_info)
+#mysql_push(stock_data, stock_info)
+
+
+#plt.plot(stock_data[])
+
+
+#print(stock_data.iloc[:,0])
+
+plt.plot(stock_data["Date"],stock_data.iloc[:,0], label = "AAPL")
+plt.plot(stock_data["Date"],stock_data.iloc[:,1], label = "META")
+plt.plot(stock_data["Date"],stock_data.iloc[:,2], label = "TSLA")
+plt.plot(stock_data["Date"],stock_data.iloc[:,3], label = "GOOG")
+plt.plot(stock_data["Date"],stock_data.iloc[:,4], label = "NVDA")
+plt.legend(loc = "upper left")
+plt.title("Stock Price in the past 6 months")
+plt.show()
